@@ -79,7 +79,7 @@ cd ~ && git clone https://github.com/dw-0/kiauh.git
 最后，通过运行以下命令启动 KIAUH：
 
 ```shell
-./kiauh/kiauh.sh
+./kiauh/kiauh-archlinux.sh
 ```
 
 * **第四步：**
@@ -222,3 +222,4 @@ cd ~ && git clone https://github.com/dw-0/kiauh.git
 * 非常感谢 [lixxbox](https://github.com/lixxbox) 设计了如此出色的 KIAUH 标志！
 * 同时，非常感谢所有通过 [Ko-fi](https://ko-fi.com/dw__0) 支持我的工作的人！
 * 最后但同样重要的是：感谢所有为 Klipper 社区做出贡献的成员，以及喜欢和分享这个项目的朋友们！
+

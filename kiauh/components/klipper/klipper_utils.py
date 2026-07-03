@@ -211,15 +211,41 @@ def backup_klipper_dir() -> None:
 
 
 def install_klipper_packages() -> None:
-    from utils.distro_utils import is_arch, map_packages_set
+    from utils.distro_utils import has_yay, is_arch, map_packages_set
 
     if is_arch():
-        # On Arch, the Ubuntu install script doesn't exist.
-        # Define the equivalent package list the Ubuntu script would provide.
+        if not has_yay():
+            Logger.print_dialog(
+                DialogType.WARNING,
+                [
+                    "Arch Linux detected, but 'yay' was not found.",
+                    "",
+                    "Klipper on Arch may need AUR packages such as:",
+                    "● stm32flash",
+                    "● avr-gcc",
+                    "● avr-binutils",
+                    "",
+                    "Install Chaotic-AUR first to simplify AUR binary packages:",
+                    "● sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com",
+                    "● sudo pacman-key --lsign-key 3056513887B78AEB",
+                    "● sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'",
+                    "● sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'",
+                    "● Add to /etc/pacman.conf:",
+                    "    [chaotic-aur]",
+                    "    Include = /etc/pacman.d/chaotic-mirrorlist",
+                    "● sudo pacman -Syu",
+                    "",
+                    "Then install yay and rerun KIAUH:",
+                    "● sudo pacman -S yay",
+                    "",
+                    "KIAUH will continue after 'yay' is available.",
+                ],
+            )
+            raise RuntimeError("Missing required AUR helper: yay")
+
         packages = {
             "virtualenv", "python3-dev", "libffi-dev", "build-essential",
-            "libncurses-dev",
-            "libusb-dev",
+            "libncurses-dev", "libusb-dev",
             "avrdude", "gcc-avr", "binutils-avr", "avr-libc",
             "stm32flash", "dfu-util", "libnewlib-arm-none-eabi",
             "gcc-arm-none-eabi", "binutils-arm-none-eabi", "libusb-1.0",

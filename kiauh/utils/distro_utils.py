@@ -47,6 +47,10 @@ def _has_cmd(cmd: str) -> bool:
     ).returncode == 0
 
 
+def has_yay() -> bool:
+    return _has_cmd("yay")
+
+
 def is_arch() -> bool:
     return detect_distro() == "arch"
 
@@ -213,6 +217,7 @@ def ensure_nginx_dirs() -> List[str]:
         return commands_run
 
     dirs = [
+        Path("/etc/nginx/conf.d"),
         Path("/etc/nginx/sites-available"),
         Path("/etc/nginx/sites-enabled"),
     ]

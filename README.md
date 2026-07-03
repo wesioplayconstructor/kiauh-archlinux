@@ -96,7 +96,7 @@ cd ~ && git clone https://github.com/dw-0/kiauh.git
   Finally, start KIAUH by running the next command:
 
 ```shell
-./kiauh/kiauh.sh
+./kiauh/kiauh-archlinux.sh
 ```
 
 * **Step 4:** \
@@ -250,3 +250,4 @@ changes!**
   a [Ko-fi](https://ko-fi.com/dw__0) !
 * Last but not least: Thank you to all contributors and members of the Klipper
   Community who like and share this project!
+

@@ -289,6 +289,7 @@ def copy_upstream_nginx_cfg() -> None:
     source = MODULE_PATH.joinpath("assets/upstreams.conf")
     target = NGINX_CONFD.joinpath("upstreams.conf")
     try:
+        ensure_nginx_dirs()
         command = ["sudo", "cp", source, target]
         run(command, stderr=PIPE, check=True)
     except CalledProcessError as e:
@@ -305,6 +306,7 @@ def copy_common_vars_nginx_cfg() -> None:
     source = MODULE_PATH.joinpath("assets/common_vars.conf")
     target = NGINX_CONFD.joinpath("common_vars.conf")
     try:
+        ensure_nginx_dirs()
         command = ["sudo", "cp", source, target]
         run(command, stderr=PIPE, check=True)
     except CalledProcessError as e:

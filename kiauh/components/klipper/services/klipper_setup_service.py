@@ -283,6 +283,9 @@ class KlipperSetupService:
             skip_pkgs = {"greenlet"} if is_arch() else None
             if create_python_venv(KLIPPER_ENV_DIR, False, system_site, self.settings.klipper.use_python_binary):
                 install_python_requirements(KLIPPER_ENV_DIR, KLIPPER_REQ_FILE, skip_packages=skip_pkgs)
+        except RuntimeError as e:
+            Logger.print_error(str(e))
+            raise
         except Exception:
             Logger.print_error("Error during installation of Klipper requirements!")
             raise
