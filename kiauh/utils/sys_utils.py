@@ -184,15 +184,35 @@ def update_python_pip(target: Path) -> None:
         raise
 
 
-def install_python_requirements(target: Path, requirements: Path) -> None:
+def install_python_requirements(
+    target: Path,
+    requirements: Path,
+    skip_packages: set[str] | None = None
+) -> None:
     """
     Installs the python packages based on a provided requirements.txt |
     :param target: Path of the virtualenv
     :param requirements: Path to the requirements.txt file
+    :param skip_packages: optional set of package names to skip (e.g., provided by system)
     :return: None
     """
     try:
         Logger.print_status("Installing Python requirements ...")
+
+        if skip_packages:
+            import tempfile
+            req_text = requirements.read_text()
+            lines = req_text.splitlines()
+            filtered = [l for l in lines if not any(
+                l.strip().startswith(pkg) for pkg in skip_packages
+            )]
+            tmp = tempfile.NamedTemporaryFile(
+                mode="w", suffix=".txt", delete=False
+            )
+            tmp.write("\n".join(filtered))
+            tmp.close()
+            requirements = Path(tmp.name)
+
         command = [
             target.joinpath("bin/pip").as_posix(),
             "install",

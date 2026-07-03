@@ -226,6 +226,8 @@ def install_klipper_packages() -> None:
             "pkg-config",
         }
         packages = map_packages_set(packages)
+        # Arch Python 3.14: greenlet must come from system package, not pip
+        packages.add("python-greenlet")
         check_install_dependencies(packages)
         return
 

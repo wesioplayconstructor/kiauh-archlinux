@@ -275,10 +275,14 @@ class KlipperSetupService:
         repo, branch = (repo[0].url, repo[0].branch) if repo else default_repo
         git_clone_wrapper(repo, KLIPPER_DIR, branch)
 
+        from utils.distro_utils import is_arch
+
         try:
             install_klipper_packages()
-            if create_python_venv(KLIPPER_ENV_DIR, False, False, self.settings.klipper.use_python_binary):
-                install_python_requirements(KLIPPER_ENV_DIR, KLIPPER_REQ_FILE)
+            system_site = is_arch()  # Arch Python 3.14 needs system greenlet
+            skip_pkgs = {"greenlet"} if is_arch() else None
+            if create_python_venv(KLIPPER_ENV_DIR, False, system_site, self.settings.klipper.use_python_binary):
+                install_python_requirements(KLIPPER_ENV_DIR, KLIPPER_REQ_FILE, skip_packages=skip_pkgs)
         except Exception:
             Logger.print_error("Error during installation of Klipper requirements!")
             raise
