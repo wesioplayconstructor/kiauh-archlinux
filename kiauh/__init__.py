@@ -12,4 +12,5 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 APPLICATION_ROOT = Path(__file__).resolve().parent
-sys.path.append(str(APPLICATION_ROOT))
+# insert at position 0 to prevent shadowing by site-packages/utils.py etc.
+sys.path.insert(0, str(APPLICATION_ROOT))
