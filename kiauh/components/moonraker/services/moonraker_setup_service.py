@@ -313,13 +313,17 @@ class MoonrakerSetupService:
         repo, branch = (repo[0].url, repo[0].branch) if repo else default_repo
         git_clone_wrapper(repo, MOONRAKER_DIR, branch)
 
+        from utils.distro_utils import is_arch
+
         try:
             install_moonraker_packages()
-            if create_python_venv(MOONRAKER_ENV_DIR, False, False, self.settings.moonraker.use_python_binary):
-                install_python_requirements(MOONRAKER_ENV_DIR, MOONRAKER_REQ_FILE)
+            system_site = is_arch()
+            skip_pkgs = {"pillow", "dbus-fast", "uvloop", "libnacl"} if is_arch() else None
+            if create_python_venv(MOONRAKER_ENV_DIR, False, system_site, self.settings.moonraker.use_python_binary):
+                install_python_requirements(MOONRAKER_ENV_DIR, MOONRAKER_REQ_FILE, skip_packages=skip_pkgs)
                 if self.settings.moonraker.optional_speedups:
                     install_python_requirements(
-                        MOONRAKER_ENV_DIR, MOONRAKER_SPEEDUPS_REQ_FILE
+                        MOONRAKER_ENV_DIR, MOONRAKER_SPEEDUPS_REQ_FILE, skip_packages=skip_pkgs
                     )
             self.__install_polkit()
         except Exception:

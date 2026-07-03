@@ -158,6 +158,16 @@ _PACKAGE_MAP: Dict[str, str] = {
     "python3-numpy": "python-numpy",
     "python3-matplotlib": "python-matplotlib",
     "libopenblas-dev": "openblas",
+    # Moonraker system deps
+    "libopenjp2-7": "openjpeg2",
+    "libsodium-dev": "libsodium",
+    "zlib1g-dev": "zlib",
+    "libjpeg-dev": "libjpeg-turbo",
+    "wireless-tools": "wireless_tools",
+    "packagekit": "packagekit",
+    # Moonraker compiled Python deps (system packages for Python 3.14 compat)
+    "python3-pillow": "python-pillow",
+    "pillow": "python-pillow",
 }
 
 

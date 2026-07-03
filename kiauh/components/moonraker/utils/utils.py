@@ -42,7 +42,25 @@ def get_moonraker_status() -> ComponentStatus:
 
 
 def install_moonraker_packages() -> None:
+    from utils.distro_utils import is_arch, map_packages_set
+
     Logger.print_status("Parsing Moonraker system dependencies  ...")
+
+    if is_arch():
+        # system-dependencies.json only has "debian" entries.
+        # Use a hardcoded Debian-name set and let map_packages_set
+        # translate them to Arch equivalents.
+        packages = {
+            "python3-virtualenv", "python3-dev", "libopenjp2-7",
+            "libsodium-dev", "zlib1g-dev", "libjpeg-dev",
+            "packagekit", "wireless-tools", "curl", "build-essential",
+            # compiled Python deps available as system packages:
+            "python-pillow", "python-dbus-fast", "python-uvloop",
+            "python-libnacl",
+        }
+        packages = map_packages_set(packages)
+        check_install_dependencies(packages)
+        return
 
     moonraker_deps = []
     if MOONRAKER_DEPS_JSON_FILE.exists():
