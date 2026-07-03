@@ -377,6 +377,9 @@ def get_nginx_config_list() -> List[Path]:
     :return: List of NGINX config files
     """
     configs: List[Path] = []
+    if not NGINX_SITES_ENABLED.exists():
+        return configs
+
     for config in NGINX_SITES_ENABLED.iterdir():
         if not config.is_file():
             continue
@@ -394,6 +397,9 @@ def get_nginx_listen_port(config: Path) -> int | None:
     # noinspection HttpUrlsUsage
     pattern = r"default_server|http://|https://|[;\[\]]"
     port = ""
+    if not config.exists():
+        return None
+
     with open(config, "r") as cfg:
         for line in cfg.readlines():
             line = re.sub(pattern, "", line.strip())
@@ -477,6 +483,9 @@ def set_listen_port(client: BaseWebClient, curr_port: int, new_port: int) -> Non
     :return: None
     """
     config = NGINX_SITES_AVAILABLE.joinpath(client.name)
+    if not config.exists():
+        raise FileNotFoundError(f"NGINX config not found: {config}")
+
     with open(config, "r") as f:
         lines = f.readlines()
 
