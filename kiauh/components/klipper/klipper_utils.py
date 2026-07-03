@@ -211,6 +211,25 @@ def backup_klipper_dir() -> None:
 
 
 def install_klipper_packages() -> None:
+    from utils.distro_utils import is_arch, map_packages_set
+
+    if is_arch():
+        # On Arch, the Ubuntu install script doesn't exist.
+        # Define the equivalent package list the Ubuntu script would provide.
+        packages = {
+            "virtualenv", "python3-dev", "libffi-dev", "build-essential",
+            "libncurses-dev",
+            "libusb-dev",
+            "avrdude", "gcc-avr", "binutils-avr", "avr-libc",
+            "stm32flash", "dfu-util", "libnewlib-arm-none-eabi",
+            "gcc-arm-none-eabi", "binutils-arm-none-eabi", "libusb-1.0",
+            "pkg-config",
+        }
+        packages = map_packages_set(packages)
+        check_install_dependencies(packages)
+        return
+
+    # Debian/Ubuntu path: parse packages from the upstream install script
     script = KLIPPER_INSTALL_SCRIPT
     packages = parse_packages_from_file(script)
 
@@ -249,11 +268,13 @@ def install_input_shaper_deps() -> None:
     ):
         return
 
-    apt_deps = (
+    from utils.distro_utils import map_packages_set
+
+    apt_deps = map_packages_set({
         "python3-numpy",
         "python3-matplotlib",
         "libopenblas-dev",
-    )
+    })
     check_install_dependencies({*apt_deps})
 
     py_deps = ("numpy",)

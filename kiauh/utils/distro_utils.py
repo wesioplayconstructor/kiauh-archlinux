@@ -137,6 +137,27 @@ _PACKAGE_MAP: Dict[str, str] = {
     "make": "make",
     "gcc": "gcc",
     "gcc-arm-none-eabi": "arm-none-eabi-gcc",
+    "binutils-arm-none-eabi": "arm-none-eabi-binutils",
+    "gcc-avr": "avr-gcc",
+    "binutils-avr": "avr-binutils",
+    "avr-libc": "avr-libc",
+    "avrdude": "avrdude",
+    "stm32flash": "stm32flash",
+    "libnewlib-arm-none-eabi": "arm-none-eabi-newlib",
+    # Dev libraries
+    "libffi-dev": "libffi",
+    "libncurses-dev": "ncurses",
+    "libusb-dev": "libusb",
+    "libusb-1.0": "libusb",
+    "libusb-1.0-0": "libusb",
+    "libgcc-10-dev": "",  # not needed on Arch
+    "libstdc++-10-dev": "",  # not needed on Arch
+    # Python
+    "virtualenv": "python-virtualenv",
+    "python3-dev": "python",
+    "python3-numpy": "python-numpy",
+    "python3-matplotlib": "python-matplotlib",
+    "libopenblas-dev": "openblas",
 }
 
 

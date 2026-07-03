@@ -11,7 +11,7 @@ import os
 import pwd
 from pathlib import Path
 
-from utils.distro_utils import get_global_deps
+from kiauh.utils.distro_utils import get_global_deps
 
 # global dependencies
 GLOBAL_DEPS = get_global_deps()
