@@ -33,6 +33,7 @@ from utils.config_utils import (
     remove_config_section,
 )
 from utils.fs_utils import run_remove_routines
+from utils.distro_utils import is_arch, map_packages
 from utils.git_utils import git_clone_wrapper
 from utils.input_utils import get_confirm
 from utils.instance_utils import get_instances
@@ -150,7 +151,13 @@ class OctoeverywhereExtension(BaseExtension):
         oe_deps = []
         if OE_DEPS_JSON_FILE.exists():
             with open(OE_DEPS_JSON_FILE, "r") as deps:
-                oe_deps = json.load(deps).get("debian", [])
+                raw = json.load(deps)
+                if is_arch():
+                    oe_deps = raw.get("arch", [])
+                if not oe_deps:
+                    oe_deps = raw.get("debian", [])
+                    if is_arch() and oe_deps:
+                        oe_deps = list(map_packages(oe_deps))
         elif OE_INSTALL_SCRIPT.exists():
             oe_deps = parse_packages_from_file(OE_INSTALL_SCRIPT)
 

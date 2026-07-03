@@ -11,8 +11,10 @@ import os
 import pwd
 from pathlib import Path
 
+from utils.distro_utils import get_global_deps
+
 # global dependencies
-GLOBAL_DEPS = ["git", "wget", "curl", "unzip", "dfu-util", "python3-virtualenv"]
+GLOBAL_DEPS = get_global_deps()
 
 # strings
 INVALID_CHOICE = "Invalid choice. Please select a valid value."

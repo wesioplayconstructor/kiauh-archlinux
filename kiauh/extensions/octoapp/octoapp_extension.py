@@ -34,6 +34,7 @@ from utils.config_utils import (
     remove_config_section,
 )
 from utils.fs_utils import run_remove_routines
+from utils.distro_utils import is_arch, map_packages
 from utils.git_utils import git_clone_wrapper
 from utils.input_utils import get_confirm
 from utils.instance_utils import get_instances
@@ -150,7 +151,13 @@ class OctoappExtension(BaseExtension):
         OA_deps = []
         if OA_DEPS_JSON_FILE.exists():
             with open(OA_DEPS_JSON_FILE, "r") as deps:
-                OA_deps = json.load(deps).get("debian", [])
+                raw = json.load(deps)
+                if is_arch():
+                    OA_deps = raw.get("arch", [])
+                if not OA_deps:
+                    OA_deps = raw.get("debian", [])
+                    if is_arch() and OA_deps:
+                        OA_deps = list(map_packages(OA_deps))
         elif OA_INSTALL_SCRIPT.exists():
             OA_deps = parse_packages_from_file(OA_INSTALL_SCRIPT)
 

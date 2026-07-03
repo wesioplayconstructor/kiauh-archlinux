@@ -30,6 +30,7 @@ from utils.sys_utils import (
     install_system_packages,
     update_system_package_lists,
 )
+from utils.distro_utils import map_packages_set
 
 
 # noinspection PyUnusedLocal
@@ -132,7 +133,7 @@ class KlipperBuildFirmwareMenu(BaseMenu):
         self.title = "Build Firmware Menu"
         self.title_color = Color.CYAN
         self.previous_menu: Type[BaseMenu] | None = previous_menu
-        self.deps: Set[str] = {"build-essential", "dpkg-dev", "make"}
+        self.deps: Set[str] = map_packages_set({"build-essential", "dpkg-dev", "make"})
         self.missing_deps: List[str] = check_package_install(self.deps)
         self.flash_options = FlashOptions()
         self.kconfigs_dirname = KLIPPER_KCONFIGS_DIR

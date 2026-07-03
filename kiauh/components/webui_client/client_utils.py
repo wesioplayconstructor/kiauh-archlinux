@@ -39,6 +39,7 @@ from core.simple_config_parser.simple_config_parser import (
 from core.types.color import Color
 from core.types.component_status import ComponentStatus
 from utils.common import get_install_status
+from utils.distro_utils import ensure_nginx_dirs
 from utils.fs_utils import create_symlink, remove_file
 from utils.git_utils import (
     get_latest_remote_tag,
@@ -353,6 +354,7 @@ def create_nginx_cfg(
 
     try:
         Logger.print_status(f"Creating NGINX config for {display_name} ...")
+        ensure_nginx_dirs()
 
         source = NGINX_SITES_AVAILABLE.joinpath(cfg_name)
         target = NGINX_SITES_ENABLED.joinpath(cfg_name)

@@ -23,6 +23,14 @@ from typing import List, Literal, Set, Tuple
 
 from core.constants import SYSTEMD
 from core.logger import Logger
+from utils.distro_utils import (
+    is_arch,
+    map_packages,
+    pkg_cmd,
+    pkg_install_cmd,
+    pkg_update_cmd,
+    pkg_upgrade_cmd,
+)
 from utils.fs_utils import check_file_exist, remove_with_sudo
 from utils.input_utils import get_confirm
 
@@ -234,18 +242,21 @@ def install_python_packages(target: Path, packages: List[str]) -> None:
         raise VenvCreationFailedException(log)
 
 
-def update_system_package_lists(silent: bool, rls_info_change=False) -> None:
+def update_system_package_lists(silent: bool) -> None:
     """
     Updates the systems package list |
     :param silent: Log info to the console or not
-    :param rls_info_change: Flag for "--allow-releaseinfo-change"
     :return: None
     """
     cache_mtime: float = 0
-    cache_files: List[Path] = [
-        Path("/var/lib/apt/periodic/update-success-stamp"),
-        Path("/var/lib/apt/lists"),
-    ]
+    cache_files: List[Path] = []
+    if is_arch():
+        cache_files.append(Path("/var/lib/pacman/sync/core.db"))
+    else:
+        cache_files = [
+            Path("/var/lib/apt/periodic/update-success-stamp"),
+            Path("/var/lib/apt/lists"),
+        ]
     for cache_file in cache_files:
         if cache_file.exists():
             cache_mtime = max(cache_mtime, os.path.getmtime(cache_file))
@@ -260,9 +271,7 @@ def update_system_package_lists(silent: bool, rls_info_change=False) -> None:
         Logger.print_status("Updating package list...")
 
     try:
-        command = ["sudo", "apt-get", "update"]
-        if rls_info_change:
-            command.append("--allow-releaseinfo-change")
+        command = pkg_update_cmd()
 
         result = run(command, stderr=PIPE, text=True)
         if result.returncode != 0 or result.stderr:
@@ -282,15 +291,21 @@ def get_upgradable_packages() -> List[str]:
     :return: A list of package names available for upgrade
     """
     try:
-        command = ["apt", "list", "--upgradable"]
+        command = pkg_cmd("list_upgradable")
         output: str = check_output(command, stderr=DEVNULL, text=True, encoding="utf-8")
         pkglist: List[str] = []
 
         for line in output.split("\n"):
-            if "/" not in line:
-                continue
-            pkg = line.split("/")[0]
-            pkglist.append(pkg)
+            if is_arch():
+                if line and not line.startswith(" "):
+                    pkg = line.split()[0].strip()
+                    if pkg:
+                        pkglist.append(pkg)
+            else:
+                if "/" not in line:
+                    continue
+                pkg = line.split("/")[0]
+                pkglist.append(pkg)
 
         return pkglist
     except CalledProcessError as e:
@@ -305,15 +320,24 @@ def check_package_install(packages: Set[str]) -> List[str]:
     """
     not_installed = []
     for package in packages:
-        command = ["dpkg-query", "-f'${Status}'", "--show", package]
-        result = run(
-            command,
-            stdout=PIPE,
-            stderr=DEVNULL,
-            text=True,
-        )
-        if "installed" not in result.stdout.strip("'").split():
-            not_installed.append(package)
+        if is_arch():
+            check = run(
+                ["pacman", "-Qi", package],
+                stdout=DEVNULL,
+                stderr=DEVNULL,
+            )
+            if check.returncode != 0:
+                not_installed.append(package)
+        else:
+            command = ["dpkg-query", "-f'${Status}'", "--show", package]
+            result = run(
+                command,
+                stdout=PIPE,
+                stderr=DEVNULL,
+                text=True,
+            )
+            if "installed" not in result.stdout.strip("'").split():
+                not_installed.append(package)
 
     return not_installed
 
@@ -325,16 +349,14 @@ def install_system_packages(packages: List[str]) -> None:
     :return: None
     """
     try:
-        command = ["sudo", "apt-get", "install", "-y"]
-        for pkg in packages:
-            command.append(pkg)
+        mapped = map_packages(packages) if packages else packages
+        command = pkg_install_cmd(mapped)
         run(command, stderr=PIPE, check=True)
 
         Logger.print_ok("Packages successfully installed.")
     except CalledProcessError as e:
         Logger.print_error(f"Error installing packages:\n{e.stderr.decode()}")
         raise
-
 
 def upgrade_system_packages(packages: List[str]) -> None:
     """
@@ -343,9 +365,8 @@ def upgrade_system_packages(packages: List[str]) -> None:
     :return: None
     """
     try:
-        command = ["sudo", "apt-get", "upgrade", "-y"]
-        for pkg in packages:
-            command.append(pkg)
+        mapped = map_packages(packages) if packages else packages
+        command = pkg_upgrade_cmd(mapped)
         run(command, stderr=PIPE, check=True)
 
         Logger.print_ok("Packages successfully upgraded.")
