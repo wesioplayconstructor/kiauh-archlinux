@@ -64,9 +64,9 @@ PkgManager = Dict[str, List[str]]
 
 _ARCH_CMDS: PkgManager = {
     "update": ["sudo", "pacman", "-Sy"],
-    "install": ["sudo", "pacman", "-S", "--noconfirm"],
-    "upgrade": ["sudo", "pacman", "-Su", "--noconfirm"],
-    "list_upgradable": ["pacman", "-Qu"],
+    "install": ["yay", "-S", "--noconfirm"],
+    "upgrade": ["yay", "-Su", "--noconfirm"],
+    "list_upgradable": ["yay", "-Qu"],
     "check_installed": ["pacman", "-Qi"],
 }
 
