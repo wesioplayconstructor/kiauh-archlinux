@@ -226,23 +226,46 @@ def ensure_nginx_dirs() -> List[str]:
             subprocess.run(["sudo", "mkdir", "-p", str(d)], check=True)
             commands_run.append(f"mkdir -p {d}")
 
-    # Ensure nginx.conf includes sites-enabled
+    # Ensure nginx.conf includes conf.d and sites-enabled
     nginx_conf = Path("/etc/nginx/nginx.conf")
     if nginx_conf.exists():
         content = nginx_conf.read_text()
-        include_line = "include /etc/nginx/sites-enabled/*;"
-        if include_line not in content:
-            # Add before the closing }
+        confd_include = "include /etc/nginx/conf.d/*.conf;"
+        sites_include = "include /etc/nginx/sites-enabled/*;"
+        modified = False
+        
+        # Add conf.d include if missing
+        if confd_include not in content:
+            # Insert before sites-enabled or before closing }
+            if sites_include in content:
+                content = content.replace(sites_include, f"{confd_include}\n    {sites_include}")
+            else:
+                # Add before closing } of http block
+                new_content = content.rstrip()
+                if new_content.endswith("}"):
+                    content = new_content[:-1] + f"\n    {confd_include}\n}}"
+                else:
+                    content += f"\n{confd_include}\n"
+            modified = True
+        
+        # Add sites-enabled include if missing
+        if sites_include not in content:
             new_content = content.rstrip()
             if new_content.endswith("}"):
-                new_content = new_content[:-1] + f"\n    {include_line}\n}}"
+                content = new_content[:-1] + f"\n    {sites_include}\n}}"
             else:
-                new_content += f"\n{include_line}\n"
+                content += f"\n{sites_include}\n"
+            modified = True
+        
+        if modified:
             # Write with sudo via tempfile
             tmp = Path("/tmp/_kiauh_nginx_conf")
-            tmp.write_text(new_content)
+            tmp.write_text(content)
             subprocess.run(["sudo", "cp", str(tmp), str(nginx_conf)], check=True)
             tmp.unlink()
-            commands_run.append(f"Added '{include_line}' to nginx.conf")
+            if confd_include in content:
+                commands_run.append(f"Added '{confd_include}' to nginx.conf")
+            if sites_include in content:
+                commands_run.append(f"Added '{sites_include}' to nginx.conf")
 
     return commands_run
