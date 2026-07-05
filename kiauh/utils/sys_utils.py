@@ -341,13 +341,17 @@ def check_package_install(packages: Set[str]) -> List[str]:
     not_installed = []
     for package in packages:
         if is_arch():
+            mapped_packages = map_packages([package])
+            if not mapped_packages:
+                continue
+            mapped_package = mapped_packages[0]
             check = run(
-                ["pacman", "-Qi", package],
+                ["pacman", "-Qi", mapped_package],
                 stdout=DEVNULL,
                 stderr=DEVNULL,
             )
             if check.returncode != 0:
-                not_installed.append(package)
+                not_installed.append(mapped_package)
         else:
             command = ["dpkg-query", "-f'${Status}'", "--show", package]
             result = run(

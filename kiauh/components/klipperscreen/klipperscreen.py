@@ -6,9 +6,10 @@
 #                                                                         #
 #  This file may be distributed under the terms of the GNU GPLv3 license  #
 # ======================================================================= #
+import os
 import shutil
 from pathlib import Path
-from subprocess import CalledProcessError, run
+from subprocess import DEVNULL, CalledProcessError, run
 from typing import List
 
 from components.klipper.klipper import Klipper
@@ -40,12 +41,16 @@ from utils.git_utils import (
     git_clone_wrapper,
     git_pull_wrapper,
 )
+from utils.distro_utils import is_arch
 from utils.input_utils import get_confirm
 from utils.instance_utils import get_instances
 from utils.sys_utils import (
     check_python_version,
     cmd_sysctl_service,
+    create_python_venv,
+    create_service_file,
     install_python_requirements,
+    install_system_packages,
     remove_system_service,
 )
 
@@ -80,7 +85,10 @@ def install_klipperscreen() -> None:
     git_clone_wrapper(KLIPPERSCREEN_REPO, KLIPPERSCREEN_DIR)
 
     try:
-        run(KLIPPERSCREEN_INSTALL_SCRIPT.as_posix(), shell=True, check=True)
+        if is_arch():
+            install_klipperscreen_arch()
+        else:
+            run(KLIPPERSCREEN_INSTALL_SCRIPT.as_posix(), shell=True, check=True)
         if mr_instances:
             patch_klipperscreen_update_manager(mr_instances)
             InstanceManager.restart_all(mr_instances)
@@ -95,20 +103,120 @@ def install_klipperscreen() -> None:
         return
 
 
+def install_klipperscreen_arch() -> None:
+    """Install KlipperScreen on Arch without running the upstream apt script."""
+    Logger.print_status("Installing KlipperScreen dependencies for Arch ...")
+    use_cage = get_confirm(
+        "Use Wayland/Cage backend for KlipperScreen?",
+        default_choice=True,
+    )
+
+    packages = [
+        "python3-virtualenv",
+        "python3-pip",
+        "python3-setuptools",
+        "libyaml-dev",
+        "pkg-config",
+        "libgtk-3-0",
+        "libdbus-glib-1-2",
+        "python3-gi",
+        "gir1.2-gtk-3.0",
+        "fonts-freefont-ttf",
+        "xdotool",
+    ]
+    if use_cage:
+        packages.extend(["cage", "seatd"])
+    else:
+        packages.extend([
+            "xserver-xorg",
+            "xinit",
+            "xinput",
+            "x11-xserver-utils",
+            "xserver-xorg-input-evdev",
+        ])
+
+    install_system_packages(packages)
+
+    if use_cage:
+        _configure_seatd_for_klipperscreen()
+
+    if create_python_venv(KLIPPERSCREEN_ENV_DIR, force=False):
+        install_python_requirements(KLIPPERSCREEN_ENV_DIR, KLIPPERSCREEN_REQ_FILE)
+    elif KLIPPERSCREEN_ENV_DIR.joinpath("bin/pip").exists():
+        install_python_requirements(KLIPPERSCREEN_ENV_DIR, KLIPPERSCREEN_REQ_FILE)
+    else:
+        raise CalledProcessError(1, "create KlipperScreen virtualenv")
+
+    create_service_file(
+        KLIPPERSCREEN_SERVICE_NAME,
+        _prep_klipperscreen_service_content(use_cage),
+    )
+    cmd_sysctl_service(KLIPPERSCREEN_SERVICE_NAME, "enable")
+    cmd_sysctl_service(KLIPPERSCREEN_SERVICE_NAME, "restart")
+
+
+def _configure_seatd_for_klipperscreen() -> None:
+    user = os.environ.get("SUDO_USER") or os.environ.get("USER") or Path.home().name
+    for group in ("input", "video", "render", "seat"):
+        if run(["getent", "group", group], stdout=DEVNULL, stderr=DEVNULL).returncode == 0:
+            run(["sudo", "usermod", "-aG", group, user], check=False)
+
+    cmd_sysctl_service("seatd.service", "enable")
+    cmd_sysctl_service("seatd.service", "start")
+
+
+def _prep_klipperscreen_service_content(use_cage: bool) -> str:
+    user = os.environ.get("SUDO_USER") or os.environ.get("USER") or Path.home().name
+    python_bin = KLIPPERSCREEN_ENV_DIR.joinpath("bin/python")
+    screen_py = KLIPPERSCREEN_DIR.joinpath("screen.py")
+
+    if use_cage:
+        after = "After=network.target seatd.service"
+        wants = "Wants=seatd.service"
+        environment = "Environment=GDK_BACKEND=wayland"
+        exec_start = f"/usr/bin/cage -ds -- {python_bin} {screen_py}"
+    else:
+        after = "After=network.target"
+        wants = ""
+        environment = "Environment=DISPLAY=:0"
+        exec_start = f"/usr/bin/xinit {python_bin} {screen_py} -- :0 -nolisten tcp"
+
+    wants_line = f"{wants}\n" if wants else ""
+    return f"""[Unit]
+Description=KlipperScreen
+{after}
+{wants_line}
+[Service]
+Type=simple
+User={user}
+WorkingDirectory={KLIPPERSCREEN_DIR}
+{environment}
+ExecStart={exec_start}
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+
 def patch_klipperscreen_update_manager(instances: List[Moonraker]) -> None:
     BackupService().backup_moonraker_conf()
+    options = [
+        ("type", "git_repo"),
+        ("path", KLIPPERSCREEN_DIR.as_posix()),
+        ("origin", KLIPPERSCREEN_REPO),
+        ("managed_services", "KlipperScreen"),
+        ("env", f"{KLIPPERSCREEN_ENV_DIR}/bin/python"),
+        ("requirements", KLIPPERSCREEN_REQ_FILE.as_posix()),
+    ]
+    if not is_arch():
+        options.append(("install_script", KLIPPERSCREEN_INSTALL_SCRIPT.as_posix()))
+
     add_config_section(
         section=KLIPPERSCREEN_UPDATER_SECTION_NAME,
         instances=instances,
-        options=[
-            ("type", "git_repo"),
-            ("path", KLIPPERSCREEN_DIR.as_posix()),
-            ("origin", KLIPPERSCREEN_REPO),
-            ("managed_services", "KlipperScreen"),
-            ("env", f"{KLIPPERSCREEN_ENV_DIR}/bin/python"),
-            ("requirements", KLIPPERSCREEN_REQ_FILE.as_posix()),
-            ("install_script", KLIPPERSCREEN_INSTALL_SCRIPT.as_posix()),
-        ],
+        options=options,
     )
 
 

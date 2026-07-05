@@ -172,6 +172,25 @@ _PACKAGE_MAP: Dict[str, str] = {
     # Moonraker compiled Python deps (system packages for Python 3.14 compat)
     "python3-pillow": "python-pillow",
     "pillow": "python-pillow",
+    # Additional Arch mappings required by KlipperScreen/Cage and sysdeps
+    "python3-setuptools": "python-setuptools",
+    "libyaml-dev": "libyaml",
+    "pkg-config": "pkgconf",
+    "xserver-xorg": "xorg-server",
+    "xinit": "xorg-xinit",
+    "xinput": "xorg-xinput",
+    "x11-xserver-utils": "xorg-xrandr",
+    "xserver-xorg-input-evdev": "xf86-input-evdev",
+    "xserver-xorg-legacy": "",
+    "libgtk-3-0": "gtk3",
+    "libdbus-glib-1-2": "dbus-glib",
+    "python3-gi": "python-gobject",
+    "gir1.2-gtk-3.0": "gtk3",
+    "fonts-freefont-ttf": "ttf-freefont",
+    "matchbox-keyboard": "matchbox-keyboard",
+    "xdotool": "xdotool",
+    "cage": "cage",
+    "seatd": "seatd",
 }
 
 
@@ -182,12 +201,22 @@ def map_package(pkg: str) -> str:
 
 def map_packages(packages: List[str]) -> List[str]:
     """Map a list of Debian package names to Arch equivalents."""
-    return [map_package(p) for p in packages]
+    mapped_packages: List[str] = []
+    for package in packages:
+        mapped = map_package(package)
+        if mapped:
+            mapped_packages.append(mapped)
+    return mapped_packages
 
 
 def map_packages_set(packages: Set[str]) -> Set[str]:
     """Map a set of Debian package names to Arch equivalents."""
-    return {map_package(p) for p in packages}
+    mapped_packages: Set[str] = set()
+    for package in packages:
+        mapped = map_package(package)
+        if mapped:
+            mapped_packages.add(mapped)
+    return mapped_packages
 
 
 def get_global_deps() -> Set[str]:
